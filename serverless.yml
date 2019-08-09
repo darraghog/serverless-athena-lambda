@@ -1,0 +1,70 @@
+org: darraghog
+app: myapp
+service: products-athena
+custom:
+ BUCKET_NAME: darraghog-serverless-athena
+ ATHENA_BUCKET_NAME: darraghog-serverless-athena-meta
+ DATABASE_NAME: 'productsathenasls'
+
+
+provider:
+ name: aws
+ runtime: nodejs8.10
+ environment: ${self:custom}
+ iamRoleStatements:
+   - Effect: Allow
+     Action:
+       - "s3:GetBucketLocation"
+       - "s3:GetObject"
+       - "s3:ListBucket"
+       - "s3:ListBucketMultipartUploads"
+       - "s3:ListMultipartUploadParts"
+       - "s3:AbortMultipartUpload"
+       - "s3:CreateBucket"
+       - "s3:PutObject"
+     Resource:
+       - "arn:aws:s3:::${self:custom.BUCKET_NAME}/*"
+       - "arn:aws:s3:::${self:custom.BUCKET_NAME}"
+       -  "arn:aws:s3:::${self:custom.ATHENA_BUCKET_NAME}"
+       - "arn:aws:s3:::${self:custom.ATHENA_BUCKET_NAME}/*"
+   - Effect: "Allow"
+     Action:
+       - "glue:*"
+     Resource:
+         - "*"
+   - Effect: "Allow"
+     Action:
+       - "athena:*"
+     Resource:
+       - "*"
+functions:
+  createProduct:
+    handler: handler.createProduct
+    events:
+      - http:
+          method: post
+          path: product
+
+  athenaInit:
+    handler: athena.init
+
+  searchProductByName:
+    handler: handler.searchProductByName
+    timeout: 60
+    events:
+      - http: 
+          path: product
+          method: get
+       
+
+
+resources:
+ Resources:
+   ProductS3Bucket:
+     Type: AWS::S3::Bucket
+     Properties:
+       BucketName: ${self:custom.BUCKET_NAME}
+   AthenaBucket:
+     Type: AWS::S3::Bucket
+     Properties:
+       BucketName: ${self:custom.ATHENA_BUCKET_NAME}
