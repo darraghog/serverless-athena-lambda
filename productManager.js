@@ -16,3 +16,4 @@ module.exports.saveProduct = async product => {
    };  
    return s3.putObject(params).promise();
 }
+
